@@ -1,0 +1,11 @@
+save_folder: <absolute path to the folder where the repositories will be saved>
+ssh_key: <absolute path to your SSH private key authorized to pull repositories>
+repos:
+  - {
+    type: gitlab,
+    token: <personnal token>
+  }
+  - {
+    type: github,
+    token: <personnal token, scope repo:status is sufficient>
+  }
