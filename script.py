@@ -5,6 +5,7 @@ import argparse
 import os
 import sys
 import requests
+import time
 
 GITHUB_REPO = "github"
 GITLAB_REPO = "gitlab"
@@ -13,6 +14,8 @@ SSH_AGENT = "ssh-agent bash -c '"
 GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
+
+NB_TRY = 5
 
 
 def handle_repo(root_folder, ssh_key_path, repo):
@@ -36,12 +39,25 @@ def handle_github_repo(save_folder, ssh_key_path, repo):
 
 
 def handle_gitlab_repo(save_folder, ssh_key_path, repo):
-	gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
+	nb_try = 0
 
-	projects = gl.projects.list(visibility='private')
+	while nb_try < NB_TRY:
+		try:
+			gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
 
-	for p in projects:
-		save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+			projects = gl.projects.list(visibility='private')
+		except:
+			print("Error while getting projects from Gitlab, retrying later...")
+			nb_try += 1
+			time.sleep(10)
+		else:
+			nb_try = NB_TRY + 1
+
+			for p in projects:
+				save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+
+	if nb_try == NB_TRY:
+		sys.exit(1)
 
 
 def create_repo_folder(root_folder, name):
@@ -57,6 +73,8 @@ def create_repo_folder(root_folder, name):
 
 
 def save_project(save_folder, name, ssh_url, ssh_key_path):
+	print(name)
+
 	save_folder_repo = os.path.join(save_folder, name)
 
 	return_code = 0
