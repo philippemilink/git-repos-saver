@@ -89,7 +89,7 @@ cli_parser.add_argument("config_file", help="Configuration file in YAML format")
 args = cli_parser.parse_args();
 
 config_file = open(args.config_file, 'r')
-config = yaml.load(config_file)
+config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 for repo in config['repos']:
 	handle_repo(config['save_folder'], config['ssh_key'], repo)
