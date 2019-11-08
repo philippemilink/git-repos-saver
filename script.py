@@ -45,7 +45,7 @@ def handle_gitlab_repo(save_folder, ssh_key_path, repo):
 		try:
 			gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
 
-			projects = gl.projects.list(visibility='private')
+			projects = gl.projects.list(visibility='private', all=True)
 		except:
 			print("Error while getting projects from Gitlab, retrying later...")
 			nb_try += 1
