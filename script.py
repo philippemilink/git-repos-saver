@@ -49,7 +49,7 @@ def handle_gitlab_repo(save_folder, ssh_key_path, repo):
 		except Exception as e:
 			print("Error while getting projects from Gitlab: '" + str(e) + "', retrying later...")
 			nb_try += 1
-			time.sleep(10)
+			time.sleep(60)
 		else:
 			nb_try = NB_TRY + 1
 
