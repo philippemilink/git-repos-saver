@@ -64,10 +64,8 @@ def create_repo_folder(root_folder, name):
 	folder = os.path.join(root_folder, name)
 
 	if not os.path.isdir(folder):
-		return_code =  os.makedirs(folder)
-
-		if return_code != 0:
-			sys.exit(return_code)
+		# returns nothing, let's hope it will raises an exception is something gone wrong:
+		os.makedirs(folder)
 
 	return folder
 
