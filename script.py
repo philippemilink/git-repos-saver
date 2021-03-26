@@ -113,6 +113,5 @@ config = yaml.load(config_file, Loader=yaml.FullLoader)
 for repo in config['repos']:
 	handle_repo(config['save_folder'], config['ssh_key'], repo)
 
-if config['healthcheck_url'] != "":
+if config['healthcheck_url'] is not None and config['healthcheck_url'] != "":
 	requests.get(config['healthcheck_url'])
-
