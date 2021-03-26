@@ -57,7 +57,7 @@ def handle_gitlab_repo(save_folder, ssh_key_path, repo):
 				save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
 
 	if nb_try == NB_TRY:
-		sys.exit(1)
+		raise Exception("Reached maximum attempt number to get GitLab repositories.")
 
 
 def create_repo_folder(root_folder, name):
@@ -83,7 +83,9 @@ def save_project(save_folder, name, ssh_url, ssh_key_path):
 		return_code = os.system(git_fetch_cmd(save_folder_repo, ssh_key_path))
 
 	if return_code != 0:
-		sys.exit(return_code)
+		raise Exception("Getting repository '{}' failed with code {}.".format(
+			save_folder_repo, return_code
+		))
 
 
 def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
