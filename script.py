@@ -5,7 +5,6 @@ import argparse
 import os
 import sys
 import requests
-import time
 
 GITHUB_REPO = "github"
 GITLAB_REPO = "gitlab"
@@ -14,8 +13,6 @@ SSH_AGENT = "ssh-agent bash -c '"
 GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
-
-NB_TRY = 5
 
 
 def handle_repo(root_folder, ssh_key_path, repo):
@@ -33,31 +30,29 @@ def handle_github_repo(save_folder, ssh_key_path, repo):
 	gh = github.Github(repo['token'])
 
 	projects = gh.get_user().get_repos();
-
 	for p in projects:
 		save_project(save_folder, p.full_name, p.ssh_url, ssh_key_path)
 
+	# also save starred repositories:
+	starred = gh.get_user().get_starred();
+	for s in starred:
+		save_project(save_folder, s.full_name, s.ssh_url, ssh_key_path)
+
 
 def handle_gitlab_repo(save_folder, ssh_key_path, repo):
-	nb_try = 0
+	gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
 
-	while nb_try < NB_TRY:
-		try:
-			gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
+	private_projects = gl.projects.list(visibility='private', all=True)
+	for p in private_projects:
+		save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
 
-			projects = gl.projects.list(visibility='private', all=True)
-		except Exception as e:
-			print("Error while getting projects from Gitlab: '" + str(e) + "', retrying later...")
-			nb_try += 1
-			time.sleep(60)
-		else:
-			nb_try = NB_TRY + 1
+	public_projects = gl.projects.list(visibility="public", owned=True, all=True)
+	for p in public_projects:
+		save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
 
-			for p in projects:
-				save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
-
-	if nb_try == NB_TRY:
-		raise Exception("Reached maximum attempt number to get GitLab repositories.")
+	starred = gl.projects.list(starred=True, all=True)
+	for s in starred:
+		save_project(save_folder, s.path_with_namespace, s.ssh_url_to_repo, ssh_key_path)
 
 
 def create_repo_folder(root_folder, name):
