@@ -6,8 +6,9 @@ import os
 import sys
 import requests
 
-GITHUB_REPO = "github"
-GITLAB_REPO = "gitlab"
+
+FORGE_TYPE_GITHUB = "github"
+FORGE_TYPE_GITLAB = "gitlab"
 
 SSH_AGENT = "ssh-agent bash -c '"
 GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
@@ -15,47 +16,46 @@ GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
 
 
-def handle_repo(root_folder, ssh_key_path, repo):
-	if repo['type'] == GITHUB_REPO:
-		folder = create_repo_folder(root_folder, GITHUB_REPO)
-		handle_github_repo(folder, ssh_key_path, repo)
-	elif repo['type'] == GITLAB_REPO:
-		folder = create_repo_folder(root_folder, GITLAB_REPO)
-		handle_gitlab_repo(folder, ssh_key_path, repo)
+def handle_forge(root_folder, ssh_key_path, forge):
+	if forge['type'] == FORGE_TYPE_GITHUB:
+		folder = create_forge_folder(root_folder, FORGE_TYPE_GITHUB)
+		handle_github_forge(folder, ssh_key_path, forge['token'])
+	elif forge['type'] == FORGE_TYPE_GITLAB:
+		folder = create_forge_folder(root_folder, FORGE_TYPE_GITLAB)
+		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'])
 	else:
-		raise Exception("Unknown repository type.")
+		raise Exception("Forge type not supported: '{}'".format(forge['type']))
 
 
-def handle_github_repo(save_folder, ssh_key_path, repo):
-	gh = github.Github(repo['token'])
+def handle_github_forge(save_folder, ssh_key_path, token):
+	gh = github.Github(token)
 
 	projects = gh.get_user().get_repos();
 	for p in projects:
-		save_project(save_folder, p.full_name, p.ssh_url, ssh_key_path)
+		save_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path)
 
-	# also save starred repositories:
 	starred = gh.get_user().get_starred();
 	for s in starred:
-		save_project(save_folder, s.full_name, s.ssh_url, ssh_key_path)
+		save_repository(save_folder, s.full_name, s.ssh_url, ssh_key_path)
 
 
-def handle_gitlab_repo(save_folder, ssh_key_path, repo):
-	gl = gitlab.Gitlab('http://gitlab.com', private_token=repo['token'])
+def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token):
+	gl = gitlab.Gitlab(forge_url, private_token=token)
 
 	private_projects = gl.projects.list(visibility='private', all=True)
 	for p in private_projects:
-		save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+		save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
 
 	public_projects = gl.projects.list(visibility="public", owned=True, all=True)
 	for p in public_projects:
-		save_project(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+		save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
 
 	starred = gl.projects.list(starred=True, all=True)
 	for s in starred:
-		save_project(save_folder, s.path_with_namespace, s.ssh_url_to_repo, ssh_key_path)
+		save_repository(save_folder, s.path_with_namespace, s.ssh_url_to_repo, ssh_key_path)
 
 
-def create_repo_folder(root_folder, name):
+def create_forge_folder(root_folder, name):
 	folder = os.path.join(root_folder, name)
 
 	if not os.path.isdir(folder):
@@ -65,11 +65,10 @@ def create_repo_folder(root_folder, name):
 	return folder
 
 
-def save_project(save_folder, name, ssh_url, ssh_key_path):
+def save_repository(save_folder, name, ssh_url, ssh_key_path):
 	print(name)
 
 	save_folder_repo = os.path.join(save_folder, name)
-
 	return_code = 0
 
 	if not os.path.isdir(save_folder_repo):
@@ -105,8 +104,8 @@ args = cli_parser.parse_args();
 config_file = open(args.config_file, 'r')
 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
-for repo in config['repos']:
-	handle_repo(config['save_folder'], config['ssh_key'], repo)
+for forge in config['forges']:
+	handle_forge(config['save_folder'], config['ssh_key'], forge)
 
 if config['healthcheck_url'] is not None and config['healthcheck_url'] != "":
 	requests.get(config['healthcheck_url'])
