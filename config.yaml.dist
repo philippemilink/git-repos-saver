@@ -1,9 +1,10 @@
 save_folder: <absolute path to the folder where the repositories will be saved>
 ssh_key: <absolute path to your SSH private key authorized to pull repositories>
 healthcheck_url: <healthcheck_url>
-repos:
+forges:
   - {
     type: gitlab,
+    url: "https://gitlab.com",
     token: <personnal token>
   }
   - {
