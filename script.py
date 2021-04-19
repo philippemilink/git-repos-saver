@@ -1,5 +1,5 @@
 import gitlab # https://python-gitlab.readthedocs.io
-import github # https://gitpython.readthedocs.io
+import github # https://pygithub.readthedocs.io
 import yaml # https://pyyaml.org/
 import argparse
 import os
@@ -64,7 +64,7 @@ def create_repo_folder(root_folder, name):
 	folder = os.path.join(root_folder, name)
 
 	if not os.path.isdir(folder):
-		# returns nothing, let's hope it will raises an exception is something gone wrong:
+		# returns nothing, let's hope it will raise an exception if something went wrong:
 		os.makedirs(folder)
 
 	return folder
