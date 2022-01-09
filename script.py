@@ -11,7 +11,10 @@ FORGE_TYPE_GITHUB = "github"
 FORGE_TYPE_GITLAB = "gitlab"
 
 SSH_AGENT = "ssh-agent bash -c '"
-GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
+# Quite mode to avoid "Identity added" messages:
+SSH_ADD = "ssh-add -q "
+# Quiet mode to avoid 'Warning: Permanently added 'xxx' (ECDSA) to the list of known hosts.' messages:
+GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
 
@@ -84,7 +87,7 @@ def save_repository(save_folder, name, ssh_url, ssh_key_path):
 
 def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
 	cd = 'cd ' + save_folder
-	ssh_add = "ssh-add " + ssh_key_path + ";"
+	ssh_add = SSH_ADD + ssh_key_path + ";"
 	git_clone = GIT_CLONE + ssh_url + " " + save_folder_repo
 
 	return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + git_clone + "'"
@@ -92,7 +95,7 @@ def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
 
 def git_fetch_cmd(save_folder_repo, ssh_key_path):
 	cd = 'cd ' + save_folder_repo
-	ssh_add = "ssh-add " + ssh_key_path + ";"
+	ssh_add = SSH_ADD + ssh_key_path + ";"
 
 	return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + GIT_FETCH + "'"
 
