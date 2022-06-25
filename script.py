@@ -19,12 +19,19 @@ GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
 
 
+def get_forge_name(forge):
+	if 'name' in forge:
+		return forge['name']
+	else:
+		return forge['type']
+
+
 def handle_forge(root_folder, ssh_key_path, forge):
 	if forge['type'] == FORGE_TYPE_GITHUB:
-		folder = create_forge_folder(root_folder, FORGE_TYPE_GITHUB)
+		folder = create_forge_folder(root_folder, get_forge_name(forge))
 		handle_github_forge(folder, ssh_key_path, forge['token'])
 	elif forge['type'] == FORGE_TYPE_GITLAB:
-		folder = create_forge_folder(root_folder, FORGE_TYPE_GITLAB)
+		folder = create_forge_folder(root_folder, get_forge_name(forge))
 		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'])
 	else:
 		raise Exception("Forge type not supported: '{}'".format(forge['type']))

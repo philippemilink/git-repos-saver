@@ -8,6 +8,12 @@ forges:
     token: <personnal token>
   }
   - {
+    type: gitlab,
+    name: acme,
+    url: "https://gitlab.acme.com",
+    token: <personnal token>
+  }
+  - {
     type: github,
     token: <personnal token, scope repo:status is sufficient>
   }
