@@ -27,42 +27,38 @@ def get_forge_name(forge):
 
 
 def handle_forge(root_folder, ssh_key_path, forge):
+	if forge['type'] not in [FORGE_TYPE_GITHUB, FORGE_TYPE_GITLAB]:
+		raise Exception("Forge type not supported: '{}'".format(forge['type']))
+
+	folder = create_forge_folder(root_folder, get_forge_name(forge))
+
 	if forge['type'] == FORGE_TYPE_GITHUB:
-		folder = create_forge_folder(root_folder, get_forge_name(forge))
 		handle_github_forge(folder, ssh_key_path, forge['token'])
 	elif forge['type'] == FORGE_TYPE_GITLAB:
-		folder = create_forge_folder(root_folder, get_forge_name(forge))
 		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'])
-	else:
-		raise Exception("Forge type not supported: '{}'".format(forge['type']))
 
 
 def handle_github_forge(save_folder, ssh_key_path, token):
+	def _save_all(projects):
+		for p in projects:
+			save_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path)
+
 	gh = github.Github(token)
 
-	projects = gh.get_user().get_repos();
-	for p in projects:
-		save_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path)
-
-	starred = gh.get_user().get_starred();
-	for s in starred:
-		save_repository(save_folder, s.full_name, s.ssh_url, ssh_key_path)
+	_save_all(gh.get_user().get_repos())
+	_save_all(gh.get_user().get_starred())
 
 
 def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token):
+	def _save_all(projects):
+		for p in projects:
+			save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+
 	gl = gitlab.Gitlab(forge_url, private_token=token)
 
-	private_projects = gl.projects.list(visibility='private', all=True)
-	for p in private_projects:
-		save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
-
-	public_projects = gl.projects.list(visibility="public", owned=True, all=True)
-	for p in public_projects:
-		save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
-
-	starred = gl.projects.list(starred=True, all=True)
-	for s in starred:
-		save_repository(save_folder, s.path_with_namespace, s.ssh_url_to_repo, ssh_key_path)
+	_save_all(gl.projects.list(visibility='private', all=True))
+	_save_all(gl.projects.list(visibility="public", owned=True, all=True))
+	_save_all(gl.projects.list(starred=True, all=True))
 
 
 def create_forge_folder(root_folder, name):
