@@ -1,10 +1,11 @@
+import argparse
+import os
+import requests
+import sys
+
 import gitlab # https://python-gitlab.readthedocs.io
 import github # https://pygithub.readthedocs.io
 import yaml # https://pyyaml.org/
-import argparse
-import os
-import sys
-import requests
 
 
 FORGE_TYPE_GITHUB = "github"
