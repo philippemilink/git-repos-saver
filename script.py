@@ -58,6 +58,7 @@ def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token):
 	gl = gitlab.Gitlab(forge_url, private_token=token)
 
 	_save_all(gl.projects.list(visibility='private', all=True))
+	_save_all(gl.projects.list(visibility='internal', all=True))
 	_save_all(gl.projects.list(visibility="public", owned=True, all=True))
 	_save_all(gl.projects.list(starred=True, all=True))
 
