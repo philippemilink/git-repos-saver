@@ -27,6 +27,13 @@ def get_forge_name(forge):
 		return forge['type']
 
 
+def get_forge_exclude(forge):
+	if 'exclude' in forge:
+		return forge['exclude']
+	else:
+		return []
+
+
 def handle_forge(root_folder, ssh_key_path, forge):
 	if forge['type'] not in [FORGE_TYPE_GITHUB, FORGE_TYPE_GITLAB]:
 		raise Exception("Forge type not supported: '{}'".format(forge['type']))
@@ -34,15 +41,15 @@ def handle_forge(root_folder, ssh_key_path, forge):
 	folder = create_forge_folder(root_folder, get_forge_name(forge))
 
 	if forge['type'] == FORGE_TYPE_GITHUB:
-		handle_github_forge(folder, ssh_key_path, forge['token'])
+		handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
 	elif forge['type'] == FORGE_TYPE_GITLAB:
-		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'])
+		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge))
 
 
-def handle_github_forge(save_folder, ssh_key_path, token):
+def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
 	def _save_all(projects):
 		for p in projects:
-			save_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path)
+			handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
 
 	gh = github.Github(token)
 
@@ -53,7 +60,7 @@ def handle_github_forge(save_folder, ssh_key_path, token):
 def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token):
 	def _save_all(projects):
 		for p in projects:
-			save_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path)
+			handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
 
 	gl = gitlab.Gitlab(forge_url, private_token=token)
 
@@ -73,7 +80,11 @@ def create_forge_folder(root_folder, name):
 	return folder
 
 
-def save_repository(save_folder, name, ssh_url, ssh_key_path):
+def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_repositories):
+	if name in excluded_repositories:
+		print("!! Skipping {}".format(name))
+		return
+
 	print(name)
 
 	save_folder_repo = os.path.join(save_folder, name)
