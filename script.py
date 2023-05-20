@@ -47,27 +47,33 @@ def handle_forge(root_folder, ssh_key_path, forge):
 
 
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
-	def _save_all(projects):
+	def _save_all(projects, title):
+		print("* {}...".format(title))
 		for p in projects:
 			handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
 
+	print("** Saving repositories from GitHub...")
+
 	gh = github.Github(token)
 
-	_save_all(gh.get_user().get_repos())
-	_save_all(gh.get_user().get_starred())
+	_save_all(gh.get_user().get_repos(), "Repositories")
+	_save_all(gh.get_user().get_starred(), "Starred repositories")
 
 
-def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token):
-	def _save_all(projects):
+def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories):
+	def _save_all(projects, title):
+		print("* {} repositories...".format(title))
 		for p in projects:
 			handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
 
+	print("** Saving repositories from {}...".format(forge_url))
+
 	gl = gitlab.Gitlab(forge_url, private_token=token)
 
-	_save_all(gl.projects.list(visibility='private', all=True))
-	_save_all(gl.projects.list(visibility='internal', all=True))
-	_save_all(gl.projects.list(visibility="public", owned=True, all=True))
-	_save_all(gl.projects.list(starred=True, all=True))
+	_save_all(gl.projects.list(visibility='private', all=True), "Private")
+	_save_all(gl.projects.list(visibility='internal', all=True), "Internal")
+	_save_all(gl.projects.list(visibility="public", owned=True, all=True), "Public")
+	_save_all(gl.projects.list(starred=True, all=True), "Starred")
 
 
 def create_forge_folder(root_folder, name):
