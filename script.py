@@ -70,9 +70,10 @@ def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_re
 
 	gl = gitlab.Gitlab(forge_url, private_token=token)
 
+	# See https://docs.gitlab.com/ee/api/members.html#roles for available roles for min_access_level
 	_save_all(gl.projects.list(visibility='private', all=True), "Private")
-	_save_all(gl.projects.list(visibility='internal', all=True), "Internal")
-	_save_all(gl.projects.list(visibility="public", owned=True, all=True), "Public")
+	_save_all(gl.projects.list(visibility='internal', min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Internal")
+	_save_all(gl.projects.list(visibility="public", min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Public")
 	_save_all(gl.projects.list(starred=True, all=True), "Starred")
 
 
