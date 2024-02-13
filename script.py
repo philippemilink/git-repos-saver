@@ -1,6 +1,7 @@
 import argparse
 import os
 import requests
+import subprocess
 import sys
 
 import gitlab # https://python-gitlab.readthedocs.io
@@ -12,12 +13,19 @@ FORGE_TYPE_GITHUB = "github"
 FORGE_TYPE_GITLAB = "gitlab"
 
 SSH_AGENT = "ssh-agent bash -c '"
-# Quite mode to avoid "Identity added" messages:
+# Quiet mode to avoid "Identity added" messages:
 SSH_ADD = "ssh-add -q "
 # Quiet mode to avoid 'Warning: Permanently added 'xxx' (ECDSA) to the list of known hosts.' messages:
 GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -q -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no "'
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
+
+
+def exec_command(cmd: str) -> int:
+	execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+	print(execution.stdout.rstrip())
+
+	return execution.returncode
 
 
 def get_forge_name(forge):
@@ -98,9 +106,9 @@ def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_reposit
 	return_code = 0
 
 	if not os.path.isdir(save_folder_repo):
-		return_code = os.system(git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path))
+		return_code = exec_command(git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path))
 	else:
-		return_code = os.system(git_fetch_cmd(save_folder_repo, ssh_key_path))
+		return_code = exec_command(git_fetch_cmd(save_folder_repo, ssh_key_path))
 
 	if return_code != 0:
 		raise Exception("Getting repository '{}' failed with code {}.".format(
