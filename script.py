@@ -23,7 +23,8 @@ GIT_FETCH = "git fetch --prune"
 
 def exec_command(cmd: str) -> int:
 	execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-	print(execution.stdout.rstrip())
+	if len(execution.stdout.rstrip()) > 0:
+		print(execution.stdout.rstrip())
 
 	return execution.returncode
 
