@@ -20,6 +20,8 @@ GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -q -o UserKnownHostsFile=/dev/null -o Str
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
 
+has_error = False
+
 
 def exec_command(cmd: str) -> int:
 	execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
@@ -112,9 +114,10 @@ def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_reposit
 		return_code = exec_command(git_fetch_cmd(save_folder_repo, ssh_key_path))
 
 	if return_code != 0:
-		raise Exception("Getting repository '{}' failed with code {}.".format(
+		print("Getting repository '{}' failed with code {}.".format(
 			save_folder_repo, return_code
 		))
+		has_error = True
 
 
 def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
@@ -141,6 +144,9 @@ config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 for forge in config['forges']:
 	handle_forge(config['save_folder'], config['ssh_key'], forge)
+
+if has_error:
+	raise Exception("An error occured during the backup of (at least) one repository.")
 
 if config['healthcheck_url'] is not None and config['healthcheck_url'] != "":
 	requests.get(config['healthcheck_url'])
