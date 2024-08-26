@@ -99,6 +99,8 @@ def create_forge_folder(root_folder, name):
 
 
 def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_repositories):
+	global has_error
+
 	if name in excluded_repositories:
 		print("!! Skipping {}".format(name))
 		return
