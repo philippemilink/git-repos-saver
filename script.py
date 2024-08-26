@@ -25,8 +25,15 @@ has_error = False
 
 def exec_command(cmd: str) -> int:
 	execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-	if len(execution.stdout.rstrip()) > 0:
-		print(execution.stdout.rstrip())
+	stripped_stdout = execution.stdout.rstrip()
+	if len(stripped_stdout) > 0:
+		print(stripped_stdout)
+
+		if "remote: ERROR: A repository for this project does not exist yet." in stripped_stdout:
+			# GitLab can have projects without repository. In such case, the
+			# clone will fail. Catch this failure and ignore it.
+			print("No repository cloned, because the project has no repository.")
+			return 0
 
 	return execution.returncode
 
