@@ -34,6 +34,11 @@ def exec_command(cmd: str) -> int:
 			# clone will fail. Catch this failure and ignore it.
 			print("No repository cloned, because the project has no repository.")
 			return 0
+		if "remote: ERROR: You are not allowed to download code from this project." in stripped_stdout:
+			# User may have access to a repository, but not to its code. In
+			# such case, the clone will fail. Catch this failure and ignore it.
+			print("No repository cloned, because you are not allowed to download the code.")
+			return 0
 
 	return execution.returncode
 
