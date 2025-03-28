@@ -3,6 +3,7 @@ import os
 import requests
 import subprocess
 import sys
+import time
 
 import gitlab # https://python-gitlab.readthedocs.io
 import github # https://pygithub.readthedocs.io
@@ -66,7 +67,10 @@ def handle_forge(root_folder, ssh_key_path, forge):
 	if forge['type'] == FORGE_TYPE_GITHUB:
 		handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
 	elif forge['type'] == FORGE_TYPE_GITLAB:
-		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge))
+		sleep_duration = None
+		if "sleep" in forge:
+			sleep_duration = int(forge["sleep"])
+		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
 
 
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
@@ -83,11 +87,13 @@ def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories)
 	_save_all(gh.get_user().get_starred(), "Starred repositories")
 
 
-def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories):
+def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories, sleep_duration=None):
 	def _save_all(projects, title):
 		print("* {} repositories...".format(title))
 		for p in projects:
 			handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
+			if sleep_duration is not None:
+				time.sleep(sleep_duration)
 
 	print("** Saving repositories from {}...".format(forge_url))
 

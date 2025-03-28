@@ -11,6 +11,7 @@ forges:
     name: acme
     url: "https://gitlab.acme.com"
     token: <personnal token>
+    sleep: 3  # optional, only for GitLab forges, sleep 3 seconds between each repository, can avoid hitting rate limits
 
   - type: github
     token: <personnal token, scope repo:status is sufficient>
