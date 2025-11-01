@@ -5,7 +5,7 @@ A Python script to save Git repositories from GitHub.com and GitLab instances.
 
 ## Installation
 
-Requires at least Python 3.9.
+Requires at least Python 3.10.
 
 ```sh
 pip install -r requirements.txt
