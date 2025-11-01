@@ -81,7 +81,7 @@ def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories)
 
 	print("** Saving repositories from GitHub...")
 
-	gh = github.Github(token)
+	gh = github.Github(auth=github.Auth.Token(token))
 
 	_save_all(gh.get_user().get_repos(), "Repositories")
 	_save_all(gh.get_user().get_starred(), "Starred repositories")
