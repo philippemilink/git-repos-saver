@@ -30,17 +30,6 @@ def exec_command(cmd: str) -> int:
 	if len(stripped_stdout) > 0:
 		print(stripped_stdout)
 
-		if "remote: ERROR: A repository for this project does not exist yet." in stripped_stdout:
-			# GitLab can have projects without repository. In such case, the
-			# clone will fail. Catch this failure and ignore it.
-			print("No repository cloned, because the project has no repository.")
-			return 0
-		if "remote: ERROR: You are not allowed to download code from this project." in stripped_stdout:
-			# User may have access to a repository, but not to its code. In
-			# such case, the clone will fail. Catch this failure and ignore it.
-			print("No repository cloned, because you are not allowed to download the code.")
-			return 0
-
 	return execution.returncode
 
 
@@ -91,9 +80,14 @@ def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_re
 	def _save_all(projects, title):
 		print("* {} repositories...".format(title))
 		for p in projects:
-			handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
-			if sleep_duration is not None:
-				time.sleep(sleep_duration)
+			if p.repository_access_level == "disabled":
+				print("Skipping {}, it has disabled repository".format(p.path_with_namespace))
+			elif p.empty_repo:
+				print("Skipping {}, its repository is empty".format(p.path_with_namespace))
+			else:
+				handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
+				if sleep_duration is not None:
+					time.sleep(sleep_duration)
 
 	print("** Saving repositories from {}...".format(forge_url))
 
