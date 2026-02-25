@@ -157,7 +157,12 @@ config_file = open(args.config_file, 'r')
 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 for forge in config['forges']:
-	handle_forge(config['save_folder'], config['ssh_key'], forge)
+	try:
+		handle_forge(config['save_folder'], config['ssh_key'], forge)
+	except Exception as e:
+		print("An error occured during the backup of " + get_forge_name(forge) + ":", e)
+		has_error = True
+
 
 if has_error:
 	raise Exception("An error occured during the backup of (at least) one repository.")
