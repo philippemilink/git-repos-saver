@@ -21,7 +21,7 @@ GIT_SSH_PARAMS = 'GIT_SSH_COMMAND="ssh -q -o UserKnownHostsFile=/dev/null -o Str
 GIT_CLONE = 'git clone --mirror '
 GIT_FETCH = "git fetch --prune"
 
-has_error = False
+errors = []
 
 
 def exec_command(cmd: str) -> int:
@@ -111,7 +111,7 @@ def create_forge_folder(root_folder, name):
 
 
 def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_repositories):
-	global has_error
+	global errors
 
 	if name in excluded_repositories:
 		print("!! Skipping {}".format(name))
@@ -131,7 +131,7 @@ def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_reposit
 		print("Getting repository '{}' failed with code {}.".format(
 			save_folder_repo, return_code
 		))
-		has_error = True
+		errors.append(save_folder_repo)
 
 
 def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
@@ -161,11 +161,15 @@ for forge in config['forges']:
 		handle_forge(config['save_folder'], config['ssh_key'], forge)
 	except Exception as e:
 		print("An error occured during the backup of " + get_forge_name(forge) + ":", e)
-		has_error = True
+		errors.append(get_forge_name(forge))
 
 
-if has_error:
-	raise Exception("An error occured during the backup of (at least) one repository.")
+if len(errors):
+	print()
+	print("An error occured during the backup of (at least) one repository:")
+	for e in errors:
+		print(e)
+		sys.exit(1)
 
 if config['healthcheck_url'] is not None and config['healthcheck_url'] != "":
 	requests.get(config['healthcheck_url'])
