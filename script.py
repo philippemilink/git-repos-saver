@@ -8,12 +8,14 @@ import time
 
 import gitlab # https://python-gitlab.readthedocs.io
 import github # https://pygithub.readthedocs.io
+import pyforgejo
 import yaml # https://pyyaml.org/
 
 
 class ForgeType(Enum):
     GITHUB = "github"
     GITLAB = "gitlab"
+    FORGEJO = "forgejo"
 
 
 SSH_AGENT = "ssh-agent bash -c '"
@@ -56,14 +58,17 @@ def handle_forge(root_folder, ssh_key_path, forge):
 
     folder = create_forge_folder(root_folder, get_forge_name(forge))
 
+    sleep_duration = None
+    if "sleep" in forge:
+        sleep_duration = int(forge["sleep"])
+
     match forge['type']:
         case ForgeType.GITHUB.value:
             handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
         case ForgeType.GITLAB.value:
-            sleep_duration = None
-            if "sleep" in forge:
-                sleep_duration = int(forge["sleep"])
             handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
+        case ForgeType.FORGEJO.value:
+            handle_forgejo_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
 
 
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
@@ -108,6 +113,28 @@ def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_re
     _save_all(gl.projects.list(visibility='internal', min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Internal")
     _save_all(gl.projects.list(visibility="public", min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Public")
     _save_all(gl.projects.list(starred=True, all=True), "Starred")
+
+
+def handle_forgejo_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories, sleep_duration=None):
+    def _save_all(projects, title):
+        print("* {} repositories...".format(title))
+        nb_saved = 0
+        for p in projects:
+            if p.empty:
+                print("Skipping {}, its repository is empty".format(p.full_name))
+            else:
+                handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
+                nb_saved += 1
+                if sleep_duration is not None:
+                    time.sleep(sleep_duration)
+        print(f"Saved {nb_saved} repositories out of {len(projects)}")
+
+    print("** Saving repositories from {}...".format(forge_url))
+
+    fj = pyforgejo.PyforgejoApi(base_url=forge_url + "/api/v1", api_key=token)
+
+    _save_all(fj.user.current_list_repos(), "All")
+    _save_all(fj.user.current_list_starred(), "Starred")
 
 
 def create_forge_folder(root_folder, name):
