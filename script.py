@@ -1,4 +1,5 @@
 import argparse
+from enum import Enum
 import os
 import requests
 import subprocess
@@ -10,8 +11,10 @@ import github # https://pygithub.readthedocs.io
 import yaml # https://pyyaml.org/
 
 
-FORGE_TYPE_GITHUB = "github"
-FORGE_TYPE_GITLAB = "gitlab"
+class ForgeType(Enum):
+    GITHUB = "github"
+    GITLAB = "gitlab"
+
 
 SSH_AGENT = "ssh-agent bash -c '"
 # Quiet mode to avoid "Identity added" messages:
@@ -48,18 +51,19 @@ def get_forge_exclude(forge):
 
 
 def handle_forge(root_folder, ssh_key_path, forge):
-    if forge['type'] not in [FORGE_TYPE_GITHUB, FORGE_TYPE_GITLAB]:
+    if forge['type'] not in ForgeType:
         raise Exception("Forge type not supported: '{}'".format(forge['type']))
 
     folder = create_forge_folder(root_folder, get_forge_name(forge))
 
-    if forge['type'] == FORGE_TYPE_GITHUB:
-        handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
-    elif forge['type'] == FORGE_TYPE_GITLAB:
-        sleep_duration = None
-        if "sleep" in forge:
-            sleep_duration = int(forge["sleep"])
-        handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
+    match forge['type']:
+        case ForgeType.GITHUB.value:
+            handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
+        case ForgeType.GITLAB.value:
+            sleep_duration = None
+            if "sleep" in forge:
+                sleep_duration = int(forge["sleep"])
+            handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
 
 
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
