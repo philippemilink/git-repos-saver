@@ -65,8 +65,11 @@ def handle_forge(root_folder, ssh_key_path, forge):
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
 	def _save_all(projects, title):
 		print("* {}...".format(title))
+		nb_saved = 0
 		for p in projects:
 			handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
+			nb_saved += 1
+		print(f"Saved {nb_saved} repositories out of {len(projects)}")
 
 	print("** Saving repositories from GitHub...")
 
@@ -79,6 +82,7 @@ def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories)
 def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories, sleep_duration=None):
 	def _save_all(projects, title):
 		print("* {} repositories...".format(title))
+		nb_saved = 0
 		for p in projects:
 			if p.repository_access_level == "disabled":
 				print("Skipping {}, it has disabled repository".format(p.path_with_namespace))
@@ -86,8 +90,10 @@ def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_re
 				print("Skipping {}, its repository is empty".format(p.path_with_namespace))
 			else:
 				handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
+				nb_saved += 1
 				if sleep_duration is not None:
 					time.sleep(sleep_duration)
+		print(f"Saved {nb_saved} repositories out of {len(projects)}")
 
 	print("** Saving repositories from {}...".format(forge_url))
 
