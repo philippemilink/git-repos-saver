@@ -25,134 +25,134 @@ errors = []
 
 
 def exec_command(cmd: str) -> int:
-	execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-	stripped_stdout = execution.stdout.rstrip()
-	if len(stripped_stdout) > 0:
-		print(stripped_stdout)
+    execution = subprocess.run(cmd, text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
+    stripped_stdout = execution.stdout.rstrip()
+    if len(stripped_stdout) > 0:
+        print(stripped_stdout)
 
-	return execution.returncode
+    return execution.returncode
 
 
 def get_forge_name(forge):
-	if 'name' in forge:
-		return forge['name']
-	else:
-		return forge['type']
+    if 'name' in forge:
+        return forge['name']
+    else:
+        return forge['type']
 
 
 def get_forge_exclude(forge):
-	if 'exclude' in forge:
-		return forge['exclude']
-	else:
-		return []
+    if 'exclude' in forge:
+        return forge['exclude']
+    else:
+        return []
 
 
 def handle_forge(root_folder, ssh_key_path, forge):
-	if forge['type'] not in [FORGE_TYPE_GITHUB, FORGE_TYPE_GITLAB]:
-		raise Exception("Forge type not supported: '{}'".format(forge['type']))
+    if forge['type'] not in [FORGE_TYPE_GITHUB, FORGE_TYPE_GITLAB]:
+        raise Exception("Forge type not supported: '{}'".format(forge['type']))
 
-	folder = create_forge_folder(root_folder, get_forge_name(forge))
+    folder = create_forge_folder(root_folder, get_forge_name(forge))
 
-	if forge['type'] == FORGE_TYPE_GITHUB:
-		handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
-	elif forge['type'] == FORGE_TYPE_GITLAB:
-		sleep_duration = None
-		if "sleep" in forge:
-			sleep_duration = int(forge["sleep"])
-		handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
+    if forge['type'] == FORGE_TYPE_GITHUB:
+        handle_github_forge(folder, ssh_key_path, forge['token'], get_forge_exclude(forge))
+    elif forge['type'] == FORGE_TYPE_GITLAB:
+        sleep_duration = None
+        if "sleep" in forge:
+            sleep_duration = int(forge["sleep"])
+        handle_gitlab_forge(folder, ssh_key_path, forge['url'], forge['token'], get_forge_exclude(forge), sleep_duration)
 
 
 def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories):
-	def _save_all(projects, title):
-		print("* {}...".format(title))
-		nb_saved = 0
-		for p in projects:
-			handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
-			nb_saved += 1
-		print(f"Saved {nb_saved} repositories out of {len(projects)}")
+    def _save_all(projects, title):
+        print("* {}...".format(title))
+        nb_saved = 0
+        for p in projects:
+            handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
+            nb_saved += 1
+        print(f"Saved {nb_saved} repositories out of {len(projects)}")
 
-	print("** Saving repositories from GitHub...")
+    print("** Saving repositories from GitHub...")
 
-	gh = github.Github(auth=github.Auth.Token(token))
+    gh = github.Github(auth=github.Auth.Token(token))
 
-	_save_all(gh.get_user().get_repos(), "Repositories")
-	_save_all(gh.get_user().get_starred(), "Starred repositories")
+    _save_all(gh.get_user().get_repos(), "Repositories")
+    _save_all(gh.get_user().get_starred(), "Starred repositories")
 
 
 def handle_gitlab_forge(save_folder, ssh_key_path, forge_url, token, excluded_repositories, sleep_duration=None):
-	def _save_all(projects, title):
-		print("* {} repositories...".format(title))
-		nb_saved = 0
-		for p in projects:
-			if p.repository_access_level == "disabled":
-				print("Skipping {}, it has disabled repository".format(p.path_with_namespace))
-			elif p.empty_repo:
-				print("Skipping {}, its repository is empty".format(p.path_with_namespace))
-			else:
-				handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
-				nb_saved += 1
-				if sleep_duration is not None:
-					time.sleep(sleep_duration)
-		print(f"Saved {nb_saved} repositories out of {len(projects)}")
+    def _save_all(projects, title):
+        print("* {} repositories...".format(title))
+        nb_saved = 0
+        for p in projects:
+            if p.repository_access_level == "disabled":
+                print("Skipping {}, it has disabled repository".format(p.path_with_namespace))
+            elif p.empty_repo:
+                print("Skipping {}, its repository is empty".format(p.path_with_namespace))
+            else:
+                handle_repository(save_folder, p.path_with_namespace, p.ssh_url_to_repo, ssh_key_path, excluded_repositories)
+                nb_saved += 1
+                if sleep_duration is not None:
+                    time.sleep(sleep_duration)
+        print(f"Saved {nb_saved} repositories out of {len(projects)}")
 
-	print("** Saving repositories from {}...".format(forge_url))
+    print("** Saving repositories from {}...".format(forge_url))
 
-	gl = gitlab.Gitlab(forge_url, private_token=token)
+    gl = gitlab.Gitlab(forge_url, private_token=token)
 
-	# See https://docs.gitlab.com/ee/api/members.html#roles for available roles for min_access_level
-	_save_all(gl.projects.list(visibility='private', all=True), "Private")
-	_save_all(gl.projects.list(visibility='internal', min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Internal")
-	_save_all(gl.projects.list(visibility="public", min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Public")
-	_save_all(gl.projects.list(starred=True, all=True), "Starred")
+    # See https://docs.gitlab.com/ee/api/members.html#roles for available roles for min_access_level
+    _save_all(gl.projects.list(visibility='private', all=True), "Private")
+    _save_all(gl.projects.list(visibility='internal', min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Internal")
+    _save_all(gl.projects.list(visibility="public", min_access_level=gitlab.const.REPORTER_ACCESS, all=True), "Public")
+    _save_all(gl.projects.list(starred=True, all=True), "Starred")
 
 
 def create_forge_folder(root_folder, name):
-	folder = os.path.join(root_folder, name)
+    folder = os.path.join(root_folder, name)
 
-	if not os.path.isdir(folder):
-		# returns nothing, let's hope it will raise an exception if something went wrong:
-		os.makedirs(folder)
+    if not os.path.isdir(folder):
+        # returns nothing, let's hope it will raise an exception if something went wrong:
+        os.makedirs(folder)
 
-	return folder
+    return folder
 
 
 def handle_repository(save_folder, name, ssh_url, ssh_key_path, excluded_repositories):
-	global errors
+    global errors
 
-	if name in excluded_repositories:
-		print("!! Skipping {}".format(name))
-		return
+    if name in excluded_repositories:
+        print("!! Skipping {}".format(name))
+        return
 
-	print(name)
+    print(name)
 
-	save_folder_repo = os.path.join(save_folder, name)
-	return_code = 0
+    save_folder_repo = os.path.join(save_folder, name)
+    return_code = 0
 
-	if not os.path.isdir(save_folder_repo):
-		return_code = exec_command(git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path))
-	else:
-		return_code = exec_command(git_fetch_cmd(save_folder_repo, ssh_key_path))
+    if not os.path.isdir(save_folder_repo):
+        return_code = exec_command(git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path))
+    else:
+        return_code = exec_command(git_fetch_cmd(save_folder_repo, ssh_key_path))
 
-	if return_code != 0:
-		print("Getting repository '{}' failed with code {}.".format(
-			save_folder_repo, return_code
-		))
-		errors.append(save_folder_repo)
+    if return_code != 0:
+        print("Getting repository '{}' failed with code {}.".format(
+            save_folder_repo, return_code
+        ))
+        errors.append(save_folder_repo)
 
 
 def git_clone_cmd(save_folder, save_folder_repo, ssh_url, ssh_key_path):
-	cd = 'cd ' + save_folder
-	ssh_add = SSH_ADD + ssh_key_path + ";"
-	git_clone = GIT_CLONE + ssh_url + " " + save_folder_repo
+    cd = 'cd ' + save_folder
+    ssh_add = SSH_ADD + ssh_key_path + ";"
+    git_clone = GIT_CLONE + ssh_url + " " + save_folder_repo
 
-	return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + git_clone + "'"
+    return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + git_clone + "'"
 
 
 def git_fetch_cmd(save_folder_repo, ssh_key_path):
-	cd = 'cd ' + save_folder_repo
-	ssh_add = SSH_ADD + ssh_key_path + ";"
+    cd = 'cd ' + save_folder_repo
+    ssh_add = SSH_ADD + ssh_key_path + ";"
 
-	return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + GIT_FETCH + "'"
+    return cd + " && " + SSH_AGENT + ssh_add + " " + GIT_SSH_PARAMS + " " + GIT_FETCH + "'"
 
 
 cli_parser = argparse.ArgumentParser()
@@ -163,19 +163,22 @@ config_file = open(args.config_file, 'r')
 config = yaml.load(config_file, Loader=yaml.FullLoader)
 
 for forge in config['forges']:
-	try:
-		handle_forge(config['save_folder'], config['ssh_key'], forge)
-	except Exception as e:
-		print("An error occured during the backup of " + get_forge_name(forge) + ":", e)
-		errors.append(get_forge_name(forge))
+    try:
+        handle_forge(config['save_folder'], config['ssh_key'], forge)
+    except Exception as e:
+        print("An error occured during the backup of " + get_forge_name(forge) + ":", e)
+        errors.append(get_forge_name(forge))
 
 
 if len(errors):
-	print()
-	print("An error occured during the backup of (at least) one repository:")
-	for e in errors:
-		print(e)
-		sys.exit(1)
+    print()
+    print("An error occured during the backup of (at least) one repository:")
+    for e in errors:
+        print(e)
+        sys.exit(1)
 
 if config['healthcheck_url'] is not None and config['healthcheck_url'] != "":
-	requests.get(config['healthcheck_url'])
+    requests.get(config['healthcheck_url'])
+
+
+# vim: set tabstop=4 shiftwidth=4 expandtab:
