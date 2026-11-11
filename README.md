@@ -18,7 +18,9 @@ Create an SSH key and register it in your GitHub and/or GitLab settings. This ke
 must not have a passphrase.
 
 You need an access token from each forge:
-- for GitLab, the token needs the scopes `read_api` and `read_repository`,
+- for GitLab, a legacy token needs the scopes `read_api` and `read_repository`
+  and a fine-grained token needs the scopes `Group > Projects > Project > Read`
+  and `User > Projects > Project > Read`;
 - for GitHub, the token needs the scope `repo`.
 
 Copy the `config.yaml.dist` into `config.yaml` and adapt the configuration.
