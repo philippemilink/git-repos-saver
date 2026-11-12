@@ -78,7 +78,7 @@ def handle_github_forge(save_folder, ssh_key_path, token, excluded_repositories)
         for p in projects:
             handle_repository(save_folder, p.full_name, p.ssh_url, ssh_key_path, excluded_repositories)
             nb_saved += 1
-        print(f"Saved {nb_saved} repositories out of {len(projects)}")
+        print(f"Saved {nb_saved} repositories out of {projects.totalCount}")
 
     print("** Saving repositories from GitHub...")
 
